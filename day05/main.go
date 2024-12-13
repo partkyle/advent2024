@@ -58,9 +58,9 @@ func main() {
 		g.addEdge(to, from)
 	}
 
-	util.PrettyJSON(g.Edges)
+	util.PrettyJSON(g)
 
-	var total int
+	var queuePages [][]int
 	for _, line := range queue {
 		parts := strings.Split(line, ",")
 
@@ -70,20 +70,77 @@ func main() {
 			pages = append(pages, page)
 		}
 
-		if pageOrderSafe(pages, g) {
-			val := pages[len(pages)/2]
-			total += val
+		queuePages = append(queuePages, pages)
+	}
+
+	pt2(queuePages, g)
+}
+
+func pt2(queuePages [][]int, g *Graph[int]) {
+	var total int
+	for _, page := range queuePages {
+		firstTimeWinner := true
+		for {
+			idx := findFirstBadPage(page, g)
+			if idx == -1 {
+				break
+			}
+
+			firstTimeWinner = false
+
+			fixIdx := findGreatedIndexOfBadPage(page, idx, g)
+
+			if fixIdx == -1 {
+				panic("this didn't work")
+			}
+
+			newPages := append([]int{}, page[:idx]...)
+			newPages = append(newPages, page[idx+1:fixIdx+1]...)
+			newPages = append(newPages, page[idx])
+			newPages = append(newPages, page[fixIdx+1:]...)
+			page = newPages
 		}
 
+		if !firstTimeWinner {
+			val := page[len(page)/2]
+			total += val
+		}
 	}
 
 	fmt.Println(total)
 }
 
-func pageOrderSafe(pages []int, g *Graph[int]) bool {
+func findGreatedIndexOfBadPage(page []int, idx int, g *Graph[int]) int {
+	val := page[idx]
+
+	maxIdx := -1
+	for _, edge := range g.Edges[val] {
+		newIdx := slices.Index(page, edge)
+		if newIdx > maxIdx {
+			maxIdx = newIdx
+		}
+	}
+
+	return maxIdx
+}
+
+func pt1(queuePages [][]int, g *Graph[int]) {
+	var total int
+
+	for _, page := range queuePages {
+		if findFirstBadPage(page, g) == -1 {
+			val := page[len(page)/2]
+			total += val
+		}
+	}
+
+	fmt.Println(total)
+}
+
+func findFirstBadPage(pages []int, g *Graph[int]) int {
 	var handledPages []int
 
-	for _, page := range pages {
+	for i, page := range pages {
 		// check if it has prereqs
 		if g.hasAnyEdges(page) {
 			prereqs := g.Edges[page]
@@ -92,14 +149,14 @@ func pageOrderSafe(pages []int, g *Graph[int]) bool {
 			all := containsAll(handledPages, pagesICareAbout)
 
 			if len(pagesICareAbout) > 0 && !all {
-				return false
+				return i
 			}
 		}
 
 		handledPages = append(handledPages, page)
 	}
 
-	return true
+	return -1
 }
 
 func containsAll[E comparable](haystack []E, needles []E) bool {
