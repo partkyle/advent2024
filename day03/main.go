@@ -8,7 +8,21 @@ import (
 	"advent2024/util"
 )
 
-var regex = regexp.MustCompile(`mul\((?P<left>\d+),(?P<right>\d+)\)`)
+var regex = regexp.MustCompile(`(?P<do>do\(\))|(?P<dont>don't\(\))|(?P<mul>mul\((?P<left>\d+),(?P<right>\d+)\))`)
+
+func mul(m []string) int {
+	left, err := strconv.Atoi(m[regex.SubexpIndex("left")])
+	if err != nil {
+		panic(fmt.Errorf("failed to parse %d: %w", m[regex.SubexpIndex("left")], err))
+	}
+
+	right, err := strconv.Atoi(m[regex.SubexpIndex("right")])
+	if err != nil {
+		panic(fmt.Errorf("failed to parse %d: %w", m[regex.SubexpIndex("right")], err))
+	}
+
+	return left * right
+}
 
 func pt1() {
 	var total int
@@ -16,17 +30,10 @@ func pt1() {
 		match := regex.FindAllStringSubmatch(row, -1)
 
 		for _, m := range match {
-			left, err := strconv.Atoi(m[regex.SubexpIndex("left")])
-			if err != nil {
-				panic(fmt.Errorf("failed to parse %d: %w", m[regex.SubexpIndex("left")], err))
+			if m[regex.SubexpIndex("mul")] == "" {
+				continue
 			}
-
-			right, err := strconv.Atoi(m[regex.SubexpIndex("right")])
-			if err != nil {
-				panic(fmt.Errorf("failed to parse %d: %w", m[regex.SubexpIndex("right")], err))
-			}
-
-			total += left * right
+			total += mul(m)
 		}
 	}
 
@@ -34,9 +41,29 @@ func pt1() {
 }
 
 func pt2() {
+	enabled := true
+	var total int
+	for row := range util.Data(3) {
+		match := regex.FindAllStringSubmatch(row, -1)
 
+		for _, m := range match {
+			if m[regex.SubexpIndex("do")] != "" {
+				enabled = true
+			}
+
+			if m[regex.SubexpIndex("dont")] != "" {
+				enabled = false
+			}
+
+			if enabled && m[regex.SubexpIndex("mul")] != "" {
+				total += mul(m)
+			}
+		}
+	}
+
+	fmt.Println(total)
 }
 
 func main() {
-	pt1()
+	pt2()
 }
