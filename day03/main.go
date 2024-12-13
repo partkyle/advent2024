@@ -13,12 +13,12 @@ var regex = regexp.MustCompile(`(?P<do>do\(\))|(?P<dont>don't\(\))|(?P<mul>mul\(
 func mul(m []string) int {
 	left, err := strconv.Atoi(m[regex.SubexpIndex("left")])
 	if err != nil {
-		panic(fmt.Errorf("failed to parse %d: %w", m[regex.SubexpIndex("left")], err))
+		panic(fmt.Errorf("failed to parse %s: %w", m[regex.SubexpIndex("left")], err))
 	}
 
 	right, err := strconv.Atoi(m[regex.SubexpIndex("right")])
 	if err != nil {
-		panic(fmt.Errorf("failed to parse %d: %w", m[regex.SubexpIndex("right")], err))
+		panic(fmt.Errorf("failed to parse %s: %w", m[regex.SubexpIndex("right")], err))
 	}
 
 	return left * right
