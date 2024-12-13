@@ -139,8 +139,65 @@ func rot(lines []string) []string {
 
 func pt2() {
 
+	grid := slices.Collect(util.Data(4))
+
+	var coords [][]int
+	for row, line := range grid {
+		for col, c := range line {
+			if c == 'A' {
+				coords = append(coords, []int{row, col})
+			}
+		}
+	}
+
+	neighbors := [][][]int{
+		{
+			// top left
+			{-1, -1},
+			// bottom right
+			{1, 1},
+		},
+		{
+			// top right
+			{-1, 1},
+			// bottom left
+			{1, -1},
+		},
+	}
+
+	var total int
+	for _, coord := range coords {
+
+		var subtotal int
+
+	pairloop:
+		for _, pair := range neighbors {
+			c1 := getAt(grid, coord[0]+pair[0][0], coord[1]+pair[0][1])
+			c2 := getAt(grid, coord[0]+pair[1][0], coord[1]+pair[1][1])
+
+			if c1 == c2 {
+				break pairloop
+			}
+
+			if c1 != 'M' && c1 != 'S' {
+				break pairloop
+			}
+
+			if c2 != 'M' && c2 != 'S' {
+				break pairloop
+			}
+
+			subtotal++
+		}
+
+		if subtotal == 2 {
+			total++
+		}
+	}
+
+	fmt.Println(total)
 }
 
 func main() {
-	pt1()
+	pt2()
 }
