@@ -93,10 +93,6 @@ func Data(day int) iter.Seq[string] {
 	return GetData("data", day)
 }
 
-func Sample(day int) iter.Seq[string] {
-	return GetData("sample", day)
-}
-
 func DataProcess[V any](day int, transform func(string) V) iter.Seq[V] {
 	return func(yield func(V) bool) {
 		for i := range Data(day) {
@@ -107,6 +103,9 @@ func DataProcess[V any](day int, transform func(string) V) iter.Seq[V] {
 	}
 }
 
+func Sample(day int) iter.Seq[string] {
+	return GetData("sample", day)
+}
 func SampleProcess[V any](day int, transform func(line string) V) iter.Seq[V] {
 	return func(yield func(V) bool) {
 		for i := range Sample(day) {
