@@ -16,6 +16,8 @@ func safe(ints []int) (int, bool) {
 		diffs = append(diffs, diff)
 	}
 
+	fmt.Printf("ints: %+v\ndiffs: %+v\n\n", ints, diffs)
+
 	direction := 0
 	for i, diff := range diffs {
 		absDiff := diff
@@ -79,43 +81,33 @@ func pt1() {
 }
 
 func pt2Safe(ints []int) int {
-	firstUnsafeIndex, isSafe := safe(ints)
+	_, isSafe := safe(ints)
 	if isSafe {
 		return 1
 	}
 
-	if firstUnsafeIndex >= len(ints) {
-		return 0
-	}
+	for i := 0; i < len(ints); i++ {
+		newInts := append([]int{}, ints[:i]...)
+		newInts = append(newInts, ints[i+1:]...)
 
-	newInts := append([]int{}, ints[:firstUnsafeIndex]...)
-	newInts = append(newInts, ints[firstUnsafeIndex+1:]...)
-
-	_, isSafeAgain := safe(newInts)
-	if isSafeAgain {
-		return 1
-	}
-
-	newFirstUnsafeIndex := firstUnsafeIndex + 1
-	if newFirstUnsafeIndex >= len(ints) {
-		return 0
-	}
-
-	newIntsAgain := append([]int{}, ints[:newFirstUnsafeIndex]...)
-	newIntsAgain = append(newIntsAgain, ints[newFirstUnsafeIndex+1:]...)
-
-	_, isSafeAgainAgain := safe(newIntsAgain)
-	if isSafeAgainAgain {
-		return 1
+		_, isSafe := safe(newInts)
+		if isSafe {
+			return 1
+		}
 	}
 
 	return 0
 }
 
 func pt2() {
+	var i int
 	var count int
 	for ints := range util.DataProcess(2, transform) {
-		count += pt2Safe(ints)
+		fmt.Printf("---------- iteration %d\n", i)
+		c := pt2Safe(ints)
+		fmt.Printf("safe: %d\n", c)
+		count += c
+		i++
 	}
 
 	fmt.Println(count)
