@@ -86,6 +86,10 @@ func GetData(t string, day int) iter.Seq[string] {
 }
 
 func dayFileOnDisk(t string, day int) string {
+	err := os.MkdirAll(t, 0755)
+	if err != nil {
+		panic(err)
+	}
 	return path.Join(t, fmt.Sprintf("%02d.txt", day))
 }
 
