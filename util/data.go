@@ -20,7 +20,12 @@ func downloadDay(day int) error {
 		return err
 	}
 
-	cookieFile, err := os.Open(path.Join(os.Getenv("HOME"), ".advent"))
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return err
+	}
+	adventCookieFile := path.Join(homeDir, ".advent")
+	cookieFile, err := os.Open(adventCookieFile)
 	if err != nil {
 		return err
 	}
@@ -60,17 +65,39 @@ func downloadDay(day int) error {
 }
 
 func GetData(t string, day int) iter.Seq[string] {
-	f, err := os.Open(dayFileOnDisk(t, day))
-	if errors.Is(err, os.ErrNotExist) && t == "data" {
-		err := downloadDay(day)
-		if err != nil {
-			panic(err)
+	filename := dayFileOnDisk(t, day)
+	if _, err := os.Stat(filename); errors.Is(err, os.ErrNotExist) {
+		// path/to/whatever does not exist
+		if t == "data" {
+			err := downloadDay(day)
+			if err != nil {
+				panic(err)
+			}
 		}
 
-		f, err = os.Open(dayFileOnDisk(t, day))
-		if err != nil {
-			panic(err)
+		if t == "sample" {
+			fmt.Println("No sample data, input it here or cancel:")
+
+			f, err := os.OpenFile(filename, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0644)
+			if err != nil {
+				panic(err)
+			}
+
+			//TODO: how am I supposed to end this part? like an email,<cr>.<cr>, lol
+			_, err = io.Copy(f, os.Stdin)
+			if err != nil {
+				panic(err)
+			}
+
+			if err := f.Close(); err != nil {
+				return nil
+			}
 		}
+	}
+
+	f, err := os.Open(filename)
+	if err != nil {
+		panic(err)
 	}
 
 	s := bufio.NewScanner(f)
@@ -110,6 +137,7 @@ func DataProcess[V any](day int, transform func(string) V) iter.Seq[V] {
 func Sample(day int) iter.Seq[string] {
 	return GetData("sample", day)
 }
+
 func SampleProcess[V any](day int, transform func(line string) V) iter.Seq[V] {
 	return func(yield func(V) bool) {
 		for i := range Sample(day) {
@@ -117,5 +145,19 @@ func SampleProcess[V any](day int, transform func(line string) V) iter.Seq[V] {
 				return
 			}
 		}
+	}
+}
+
+func Enumerate[I int, V any](seq iter.Seq[V]) iter.Seq2[I, V] {
+	return func(yield func(I, V) bool) {
+		var i I
+
+		for v := range seq {
+			if !yield(i, v) {
+				return
+			}
+			i++
+		}
+
 	}
 }
