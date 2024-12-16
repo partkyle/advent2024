@@ -3,6 +3,7 @@ package main
 import (
 	"advent2024/util"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 )
@@ -30,6 +31,29 @@ func permutations(count int) [][]string {
 	return results
 }
 
+func threemutations(count int) [][]string {
+	var results [][]string
+
+	perms := int(math.Pow(3, float64(count)))
+	for i := 0; i < perms; i++ {
+		n := i
+		var row []string
+		for j := 0; j < count; j++ {
+			if n%3 == 0 {
+				row = append(row, "+")
+			} else if n%3 == 1 {
+				row = append(row, "*")
+			} else {
+				row = append(row, "||")
+			}
+			n /= 3
+		}
+		results = append(results, row)
+	}
+
+	return results
+}
+
 type record struct {
 	answer int
 	ops    []int
@@ -41,6 +65,32 @@ func (r record) isPossible() bool {
 		for i, operator := range allOperators {
 			if operator == "*" {
 				val = val * r.ops[i+1]
+			} else if operator == "+" {
+				val = val + r.ops[i+1]
+			}
+		}
+
+		if val == r.answer {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (r record) isPossible3() bool {
+	for _, allOperators := range threemutations(len(r.ops) - 1) {
+		val := r.ops[0]
+		for i, operator := range allOperators {
+			if operator == "*" {
+				val = val * r.ops[i+1]
+			} else if operator == "||" {
+				sVal := fmt.Sprintf("%d%d", val, r.ops[i+1])
+				var err error
+				val, err = strconv.Atoi(sVal)
+				if err != nil {
+					panic(err)
+				}
 			} else if operator == "+" {
 				val = val + r.ops[i+1]
 			}
@@ -81,7 +131,7 @@ func parseLine(line string) record {
 func main() {
 	var total int
 	for row := range util.DataProcess(DAY, parseLine) {
-		if row.isPossible() {
+		if row.isPossible3() {
 			total += row.answer
 		}
 	}

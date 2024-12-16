@@ -49,6 +49,35 @@ func Test_permutations(t *testing.T) {
 	}
 }
 
+func Test_threemutations1(t *testing.T) {
+	type args struct {
+		count int
+	}
+	tests := []struct {
+		name string
+		args args
+		want [][]string
+	}{
+		{
+			args: args{
+				count: 2,
+			},
+			want: [][]string{
+				{"+", "+"}, {"*", "+"}, {"||", "+"},
+				{"+", "*"}, {"*", "*"}, {"||", "*"},
+				{"+", "||"}, {"*", "||"}, {"||", "||"},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := threemutations(tt.args.count); !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("threemutations() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func Test_record_isPossible(t *testing.T) {
 	tests := []struct {
 		name string
@@ -71,6 +100,28 @@ func Test_record_isPossible(t *testing.T) {
 			r := parseLine(tt.line)
 			if got := r.isPossible(); got != tt.want {
 				t.Errorf("isPossible() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func Test_record_isPossible3(t *testing.T) {
+	tests := []struct {
+		name string
+		line string
+		want bool
+	}{
+		{
+			name: "156: 15 6",
+			line: "156: 15 6",
+			want: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := parseLine(tt.line)
+			if got := r.isPossible3(); got != tt.want {
+				t.Errorf("isPossible3() = %v, want %v", got, tt.want)
 			}
 		})
 	}
