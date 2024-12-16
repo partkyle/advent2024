@@ -58,20 +58,17 @@ func charToDir(c int32) int {
 type Solver struct {
 	position coord
 	dir      int
+	bounds   coord
 
 	walls map[coord]struct{}
 	path  map[coord]int
 }
 
-func NewSolver() *Solver {
-	return &Solver{
+func NewSolver(grid []string) *Solver {
+	s := &Solver{
 		walls: make(map[coord]struct{}),
 		path:  make(map[coord]int),
 	}
-}
-
-func (s *Solver) solve(grid []string) {
-	var bounds coord
 
 	for row, line := range grid {
 		for col, c := range line {
@@ -83,22 +80,42 @@ func (s *Solver) solve(grid []string) {
 				s.dir = charToDir(c)
 			}
 
-			if col > bounds.col {
-				bounds.col = col
+			if col > s.bounds.col {
+				s.bounds.col = col
 			}
 		}
 
-		if row > bounds.row {
-			bounds.row = row
+		if row > s.bounds.row {
+			s.bounds.row = row
 		}
 	}
 
+	return s
+}
+
+func (s *Solver) Copy() *Solver {
+	newSolver := &Solver{
+		walls:    make(map[coord]struct{}),
+		path:     make(map[coord]int),
+		dir:      s.dir,
+		bounds:   s.bounds,
+		position: s.position,
+	}
+
+	for k, w := range s.walls {
+		newSolver.walls[k] = w
+	}
+
+	return newSolver
+}
+
+func (s *Solver) solve() (bool, int) {
 	for {
 		if s.hasBeen(s.position, s.dir) {
-			break
+			return true, len(s.path)
 		}
 
-		if s.position.row < 0 || s.position.row > bounds.row || s.position.col < 0 || s.position.col > bounds.col {
+		if s.position.row < 0 || s.position.row > s.bounds.row || s.position.col < 0 || s.position.col > s.bounds.col {
 			break
 		}
 
@@ -118,7 +135,44 @@ func (s *Solver) solve(grid []string) {
 		s.dir = newDir
 	}
 
-	fmt.Println(len(s.path))
+	return false, len(s.path)
+}
+
+func pathChar(dir int) string {
+	switch dir {
+	case up:
+		return "╵"
+	case down:
+		return "╷"
+	case left:
+		return "╴"
+	case right:
+		return "╶"
+	case up | down:
+		return "│"
+	case up | down | left:
+		return "┤"
+	case up | down | right:
+		return "├"
+	case up | down | left | right:
+		return "┼"
+	case up | left:
+		return "┐"
+	case up | right:
+		return "┌"
+	case up | left | right:
+		return "┴"
+	case down | left:
+		return "┑"
+	case down | left | right:
+		return "┬"
+	case down | right:
+		return "┌"
+	case left | right:
+		return "─"
+	}
+
+	return "X"
 }
 
 func coordFrom(dir int) coord {
@@ -150,9 +204,9 @@ func (s *Solver) printpath(bounds coord) {
 			if _, ok := s.walls[coord{row, col}]; ok {
 				fmt.Print("#")
 			} else if s.path[coord{row, col}] > 0 {
-				fmt.Print("X")
+				fmt.Print(pathChar(s.path[coord{row, col}]))
 			} else {
-				fmt.Print(".")
+				fmt.Print(" ")
 			}
 		}
 		fmt.Println()
@@ -165,6 +219,27 @@ func (s *Solver) printpath(bounds coord) {
 func main() {
 	grid := slices.Collect(util.Data(DAY))
 
-	s := NewSolver()
-	s.solve(grid)
+	s := NewSolver(grid)
+
+	var total int
+	for row := 0; row <= s.bounds.row; row++ {
+		for col := 0; col <= s.bounds.col; col++ {
+			c := s.Copy()
+
+			if _, ok := c.walls[coord{row, col}]; ok {
+				fmt.Printf("skipping: %d,%d\n", row, col)
+				continue
+			}
+			// add wall
+			c.walls[coord{row, col}] = struct{}{}
+			loop, _ := c.solve()
+			if loop {
+				total++
+			}
+
+			fmt.Printf("finished: loop=%v %d,%d\n", loop, row, col)
+		}
+	}
+
+	fmt.Println(total)
 }
