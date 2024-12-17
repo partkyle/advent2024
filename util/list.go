@@ -12,6 +12,14 @@ type List[E any] struct {
 	Tail *ListNode[E]
 }
 
+func (l *List[E]) Count() int {
+	var count int
+	for node := l.Head; node != nil; node = node.Next {
+		count++
+	}
+	return count
+}
+
 func (l *List[E]) InsertBeginning(data E) *ListNode[E] {
 	if l.Head == nil {
 		newNode := &ListNode[E]{
