@@ -16,3 +16,17 @@ func (v Vector) Within(lo Vector, hi Vector) bool {
 	return lo.X <= v.X && v.X < hi.X &&
 		lo.Y <= v.Y && v.Y < hi.Y
 }
+
+type CVec complex128
+
+func NewCvec(x, y int) CVec {
+	return CVec(complex(float64(x), float64(y)))
+}
+
+func (c CVec) X() int {
+	return int(real(c))
+}
+
+func (c CVec) Y() int {
+	return int(imag(c))
+}
