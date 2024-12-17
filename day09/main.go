@@ -1,9 +1,10 @@
 package main
 
 import (
-	"advent2024/util"
 	"fmt"
 	"strconv"
+
+	"advent2024/util"
 )
 
 const DAY = 9
@@ -76,66 +77,13 @@ func extractData() []int {
 	return data
 }
 
+type Node struct {
+	ID   int
+	Size int
+}
+
 type List struct {
-	Head *Node
-	Tail *Node
-}
-
-func (l *List) InsertBeginning(newNode *Node) {
-	if l.Head == nil {
-		l.Head = newNode
-		l.Tail = newNode
-		newNode.Prev = nil
-		newNode.Next = nil
-	} else {
-		l.InsertBefore(l.Head, newNode)
-	}
-}
-
-func (l *List) InsertBefore(node *Node, newNode *Node) {
-	newNode.Next = node
-	if node.Prev == nil {
-		newNode.Prev = nil
-		l.Head = newNode
-	} else {
-		newNode.Prev = node.Prev
-		node.Prev.Next = newNode
-	}
-	node.Prev = newNode
-}
-
-func (l *List) InsertAfter(node *Node, newNode *Node) {
-	newNode.Prev = node
-	if node.Next == nil {
-		newNode.Next = nil
-		l.Tail = newNode
-	} else {
-		newNode.Next = node.Next
-		node.Next.Prev = newNode
-	}
-	node.Next = newNode
-}
-
-func (l *List) InsertEnd(newNode *Node) {
-	if l.Tail == nil {
-		l.InsertBeginning(newNode)
-	} else {
-		l.InsertAfter(newNode, l.Tail)
-	}
-}
-
-func (l *List) Remove(node *Node) {
-	if node.Prev == nil {
-		l.Head = node.Next
-	} else {
-		node.Prev.Next = node.Next
-	}
-
-	if node.Next == nil {
-		l.Tail = node.Prev
-	} else {
-		node.Next.Prev = node.Prev
-	}
+	util.List[Node]
 }
 
 func (l *List) Cleanup() {
@@ -146,9 +94,9 @@ func (l *List) Cleanup() {
 	prev := l.Head
 	node := prev.Next
 	for node != nil {
-		if prev.ID == EmptyFile && node.ID == EmptyFile {
+		if prev.Data.ID == EmptyFile && node.Data.ID == EmptyFile {
 			l.Remove(node)
-			prev.Size += node.Size
+			prev.Data.Size += node.Data.Size
 		} else {
 			prev = node
 		}
@@ -157,20 +105,11 @@ func (l *List) Cleanup() {
 	}
 }
 
-type Node struct {
-	Next *Node
-	Prev *Node
-
-	ID   int
-	Size int
-}
-
 func pt2() {
 	var file int
 	fileFree := true
 
 	var list List
-	var prev *Node
 	for line := range util.Data(DAY) {
 		for _, c := range line {
 			n := util.Must(strconv.Atoi(string(c)))
@@ -180,42 +119,30 @@ func pt2() {
 				file++
 			}
 
-			node := &Node{
-				Prev: prev,
-				ID:   ID,
-				Size: n,
-			}
-
-			// TODO: can this be done without branching
-			if list.Head == nil {
-				list.Head = node
-				prev = list.Head
-			} else {
-				prev.Next = node
-				prev = node
-			}
+			list.InsertEnd(
+				Node{
+					ID:   ID,
+					Size: n,
+				},
+			)
 
 			fileFree = !fileFree
 		}
 	}
 
-	list.Tail = prev
-
-	printList(list.Head)
-
+	list.Print()
 	process(&list)
-
-	printList(list.Head)
+	list.Print()
 
 	var total int
 	var pos int
 	for curr := list.Head; curr != nil; curr = curr.Next {
-		if curr.ID != EmptyFile {
-			for i := 0; i < curr.Size; i++ {
-				total += (pos + i) * curr.ID
+		if curr.Data.ID != EmptyFile {
+			for i := 0; i < curr.Data.Size; i++ {
+				total += (pos + i) * curr.Data.ID
 			}
 		}
-		pos += curr.Size
+		pos += curr.Data.Size
 	}
 
 	fmt.Println(total)
@@ -226,16 +153,16 @@ func process(list *List) {
 	for curr != nil {
 		prev := curr.Prev
 
-		if curr.ID != EmptyFile {
+		if curr.Data.ID != EmptyFile {
 			for node := list.Head; node != curr; node = node.Next {
-				if node.ID == EmptyFile && curr.Size <= node.Size {
-					list.InsertBefore(curr, &Node{
+				if node.Data.ID == EmptyFile && curr.Data.Size <= node.Data.Size {
+					list.InsertBefore(curr, Node{
 						ID:   EmptyFile,
-						Size: curr.Size,
+						Size: curr.Data.Size,
 					})
 					list.Remove(curr)
-					list.InsertBefore(node, curr)
-					node.Size -= curr.Size
+					list.InsertBefore(node, curr.Data)
+					node.Data.Size -= curr.Data.Size
 					break
 				}
 			}
@@ -247,58 +174,16 @@ func process(list *List) {
 	}
 }
 
-func maxCompression(list *List) {
-	for curr := list.Head; curr != nil; curr = curr.Next {
-		printList(list.Head)
-		if curr.ID == EmptyFile {
-			fmt.Printf("filling empty file size=%d\n", curr.Size)
-
-			// start from the tail
-			node := list.Tail
-			for curr.Size > 0 && node != nil && node != curr {
-				prev := node.Prev
-
-				if node.ID != EmptyFile && node.Size <= curr.Size {
-					list.InsertBefore(node, &Node{
-						ID:   EmptyFile,
-						Size: node.Size,
-					})
-					list.Remove(node)
-					list.InsertBefore(curr, node)
-					curr.Size -= node.Size
-				}
-
-				node = prev
-			}
-
-			// clean up contiguous empty spaces
-			{
-				prev := curr
-				node := prev.Next
-				for node != nil {
-					if prev.ID == EmptyFile && node.ID == EmptyFile {
-						list.Remove(node)
-						prev.Size += node.Size
-					}
-
-					prev = node
-					node = node.Next
-				}
-			}
-		}
-	}
-}
-
-func printList(head *Node) {
-	for curr := head; curr != nil; curr = curr.Next {
+func (l *List) Print() {
+	for curr := l.Head; curr != nil; curr = curr.Next {
 		var c string
-		if curr.ID == EmptyFile {
+		if curr.Data.ID == EmptyFile {
 			c = "."
 		} else {
-			c = fmt.Sprintf("%d", curr.ID)
+			c = fmt.Sprintf("%d", curr.Data.ID)
 		}
 
-		for i := 0; i < curr.Size; i++ {
+		for i := 0; i < curr.Data.Size; i++ {
 			fmt.Print(c)
 		}
 	}
