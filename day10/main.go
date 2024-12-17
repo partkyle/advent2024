@@ -14,10 +14,10 @@ func main() {
 	grid := slices.Collect(util.Data(DAY))
 
 	var bounds util.Vector
-	hikingMap := make(map[util.Vector]int)
+	hikingMap := make(map[complex128]int)
 	for y, line := range grid {
 		for x, cell := range line {
-			hikingMap[util.Vector{X: x, Y: y}] = util.Must(strconv.Atoi(string(cell)))
+			hikingMap[complex(float64(x), float64(y))] = util.Must(strconv.Atoi(string(cell)))
 
 			if x > bounds.X {
 				bounds.X = x
@@ -32,11 +32,11 @@ func main() {
 	pt2(hikingMap)
 }
 
-func pt1(hikingMap map[util.Vector]int) {
+func pt1(hikingMap map[complex128]int) {
 	var total int
 	for k, v := range hikingMap {
 		if v == 0 {
-			trailheads := make(map[util.Vector]bool)
+			trailheads := make(map[complex128]bool)
 			traverse(hikingMap, trailheads, k, v)
 			total += len(trailheads)
 		}
@@ -44,7 +44,7 @@ func pt1(hikingMap map[util.Vector]int) {
 	fmt.Println(total)
 }
 
-func pt2(hikingMap map[util.Vector]int) {
+func pt2(hikingMap map[complex128]int) {
 	var total int
 	for k, v := range hikingMap {
 		if v == 0 {
@@ -54,19 +54,19 @@ func pt2(hikingMap map[util.Vector]int) {
 	fmt.Println(total)
 }
 
-func traverse(hikingMap map[util.Vector]int, trailheads map[util.Vector]bool, k util.Vector, v int) {
+func traverse(hikingMap map[complex128]int, trailheads map[complex128]bool, k complex128, v int) {
 	if v == 9 {
 		trailheads[k] = true
 	}
 
-	directions := []util.Vector{
-		{X: 0, Y: -1},
-		{X: 0, Y: 1},
-		{X: -1, Y: 0},
-		{X: 1, Y: 0},
+	directions := []complex128{
+		complex(0, -1),
+		complex(0, 1),
+		complex(-1, 0),
+		complex(1, 0),
 	}
 	for _, direction := range directions {
-		pos := k.Add(direction)
+		pos := k + direction
 		val := hikingMap[pos]
 		if val == v+1 {
 			traverse(hikingMap, trailheads, pos, v+1)
@@ -74,21 +74,21 @@ func traverse(hikingMap map[util.Vector]int, trailheads map[util.Vector]bool, k 
 	}
 }
 
-func rating(hikingMap map[util.Vector]int, k util.Vector, v int) int {
+func rating(hikingMap map[complex128]int, k complex128, v int) int {
 	if v == 9 {
 		return 1
 	}
 
-	directions := []util.Vector{
-		{X: 0, Y: -1},
-		{X: 0, Y: 1},
-		{X: -1, Y: 0},
-		{X: 1, Y: 0},
+	directions := []complex128{
+		complex(0, -1),
+		complex(0, 1),
+		complex(-1, 0),
+		complex(1, 0),
 	}
 
 	var total int
 	for _, direction := range directions {
-		pos := k.Add(direction)
+		pos := k + direction
 		val := hikingMap[pos]
 		if val == v+1 {
 			total += rating(hikingMap, pos, v+1)
