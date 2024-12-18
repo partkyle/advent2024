@@ -1,1 +1,2 @@
 - day06 pt2 brute force
+- day12 is pretty ugly. it's not very clean or clear
