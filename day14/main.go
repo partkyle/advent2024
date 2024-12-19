@@ -13,8 +13,8 @@ const WIDE = 101
 const TALL = 103
 
 type robot struct {
-	Position util.Vector
-	Velocity util.Vector
+	Position util.Vector[int]
+	Velocity util.Vector[int]
 }
 
 func (r *robot) Update(wide int, tall int) {
@@ -35,11 +35,11 @@ func parseRobot(line string) robot {
 	velocityParts := strings.Split(velocity, ",")
 
 	return robot{
-		Position: util.Vector{
+		Position: util.Vector[int]{
 			X: util.Must(strconv.Atoi(positionParts[0])),
 			Y: util.Must(strconv.Atoi(positionParts[1])),
 		},
-		Velocity: util.Vector{
+		Velocity: util.Vector[int]{
 			X: util.Must(strconv.Atoi(velocityParts[0])),
 			Y: util.Must(strconv.Atoi(velocityParts[1])),
 		},
@@ -47,15 +47,15 @@ func parseRobot(line string) robot {
 }
 
 func print(robots []robot, wide int, tall int) {
-	points := make(map[util.Vector]int)
+	points := make(map[util.Vector[int]]int)
 	for _, r := range robots {
 		points[r.Position]++
 	}
 
 	for y := 0; y < tall; y++ {
 		for x := 0; x < wide; x++ {
-			if points[util.Vector{X: x, Y: y}] > 0 {
-				fmt.Printf("%d", points[util.Vector{X: x, Y: y}])
+			if points[util.Vector[int]{X: x, Y: y}] > 0 {
+				fmt.Printf("%d", points[util.Vector[int]{X: x, Y: y}])
 			} else {
 				fmt.Print(".")
 			}

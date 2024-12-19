@@ -1,24 +1,30 @@
 package util
 
-type Vector struct {
-	X, Y int
+type vectorable interface {
+	int | int8 | int16 | int32 | int64 |
+		uint | uint8 | uint16 | uint32 | uint64 |
+		float32 | float64
 }
 
-func (v Vector) Add(o Vector) Vector {
-	return Vector{v.X + o.X, v.Y + o.Y}
+type Vector[T vectorable] struct {
+	X, Y T
 }
 
-func (v Vector) Sub(o Vector) Vector {
-	return Vector{v.X - o.X, v.Y - o.Y}
+func (v Vector[T]) Add(o Vector[T]) Vector[T] {
+	return Vector[T]{v.X + o.X, v.Y + o.Y}
 }
 
-func (v Vector) Within(lo Vector, hi Vector) bool {
+func (v Vector[T]) Sub(o Vector[T]) Vector[T] {
+	return Vector[T]{v.X - o.X, v.Y - o.Y}
+}
+
+func (v Vector[T]) Within(lo Vector[T], hi Vector[T]) bool {
 	return lo.X <= v.X && v.X < hi.X &&
 		lo.Y <= v.Y && v.Y < hi.Y
 }
 
-func (v Vector) MulScalar(t int) Vector {
-	return Vector{v.X * t, v.Y * t}
+func (v Vector[T]) MulScalar(t T) Vector[T] {
+	return Vector[T]{v.X * t, v.Y * t}
 }
 
 type CVec complex128

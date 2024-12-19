@@ -203,12 +203,12 @@ func Test_factors(t *testing.T) {
 		},
 		{
 			name: "31",
-			args: args{a: 15},
+			args: args{a: 31},
 			want: []int{31, 1},
 		},
 		{
 			name: "44",
-			args: args{a: 15},
+			args: args{a: 44},
 			want: []int{44, 22, 11, 4, 2, 1},
 		},
 	}

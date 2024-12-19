@@ -13,7 +13,7 @@ const DAY = 10
 func main() {
 	grid := slices.Collect(util.Data(DAY))
 
-	var bounds util.Vector
+	var bounds util.Vector[int]
 	hikingMap := make(map[complex128]int)
 	for y, line := range grid {
 		for x, cell := range line {
