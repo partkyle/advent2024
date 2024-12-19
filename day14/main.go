@@ -64,18 +64,73 @@ func print(robots []robot, wide int, tall int) {
 	}
 }
 
+func highestColumn(robots []robot, wide int, tall int) int {
+	columns := make(map[int]int)
+	for _, robot := range robots {
+		columns[robot.Position.X]++
+	}
+
+	maxCount := -1
+	for _, count := range columns {
+		if count > maxCount {
+			maxCount = count
+		}
+	}
+
+	return maxCount
+}
+
+func hasBorder(robots []robot, wide int, tall int) bool {
+	return false
+}
+
 func main() {
-	rounds := 100
 	robots := slices.Collect(util.DataProcess(14, parseRobot))
 
 	//wide, tall := 11, 7
 	wide, tall := WIDE, TALL
 
-	for i := 0; i < rounds; i++ {
-		for i := range robots {
-			robots[i].Update(wide, tall)
+	maxColumn := -1
+
+	for i := 0; i < 8159; i++ {
+		for r := range robots {
+			robots[r].Update(wide, tall)
 		}
 	}
+
+	print(robots, wide, tall)
+
+	return
+
+	for i := 0; i < 1000000; i++ {
+		for r := range robots {
+			robots[r].Update(wide, tall)
+		}
+
+		column := highestColumn(robots, wide, tall)
+		fmt.Println(i, column)
+
+		if column > maxColumn {
+			maxColumn = column
+		}
+
+		if column >= 34 {
+			print(robots, wide, tall)
+			fmt.Println()
+			fmt.Println()
+			fmt.Println()
+			fmt.Println()
+			fmt.Println()
+		}
+
+		//if column == 100 {
+		//	fmt.Println("seconds:", i)
+		//	print(robots, wide, tall)
+		//	break
+		//}
+	}
+
+	fmt.Println(maxColumn)
 
 	var quadrantTotals [4]int
 	for _, robot := range robots {

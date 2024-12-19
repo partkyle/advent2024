@@ -17,6 +17,10 @@ func (v Vector) Within(lo Vector, hi Vector) bool {
 		lo.Y <= v.Y && v.Y < hi.Y
 }
 
+func (v Vector) MulScalar(t int) Vector {
+	return Vector{v.X * t, v.Y * t}
+}
+
 type CVec complex128
 
 func NewCvec(x, y int) CVec {
