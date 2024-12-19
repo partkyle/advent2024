@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"math"
 	"slices"
-
-	"advent2024/util"
 )
 
 /*
@@ -26,8 +24,10 @@ type puzzle struct {
 func main() {
 	puzzles := processPuzzles()
 
-	util.PrettyJSON(puzzles)
+	pt2(puzzles)
+}
 
+func pt1(puzzles []puzzle) {
 	var total int
 	for _, p := range puzzles {
 		answer := findAnswer(p)
@@ -61,14 +61,62 @@ func findAnswer(p puzzle) *int {
 	return nil
 }
 
+func pt2(puzzles []puzzle) {
+	for i := range puzzles {
+		puzzles[i].Prize.X += 10000000000000
+		puzzles[i].Prize.Y += 10000000000000
+	}
+
+	var total int
+	for _, p := range puzzles {
+		answers := gaussianElimination([][]float64{
+			{float64(p.A.X), float64(p.B.X), float64(p.Prize.X)},
+			{float64(p.A.Y), float64(p.B.Y), float64(p.Prize.Y)},
+		})
+
+		if answers != nil {
+			fmt.Println(answers)
+
+			total += validateAnswer(p, answers)
+		}
+	}
+
+	fmt.Println(total)
+}
+
+func validateAnswer(p puzzle, answer []float64) int {
+	var solutions []int
+
+	for a := int(math.Floor(answer[0])); a < int(math.Ceil(answer[0]))+1; a++ {
+		for b := int(math.Floor(answer[1])); b < int(math.Ceil(answer[1]))+1; b++ {
+			x := a*p.A.X + b*p.B.X
+			y := a*p.A.Y + b*p.B.Y
+
+			if x == p.Prize.X && y == p.Prize.Y {
+				solutions = append(solutions, 3*a+b)
+			}
+		}
+	}
+
+	slices.Sort(solutions)
+
+	if len(solutions) > 0 {
+		return solutions[0]
+	}
+
+	return 0
+}
+
 func gaussianElimination(mat [][]float64) []float64 {
 	singular := forwardElim(mat)
 
 	if singular != -1 {
 		if mat[singular][len(mat)] != 0 {
-			panic("inconsistent system")
+			fmt.Println("inconsistent system")
+			return nil
 		} else {
-			panic("may have infinitely many solutions")
+			fmt.Println("may have infinitely many solutions")
+			return nil
 		}
 	}
 
