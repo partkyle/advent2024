@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"iter"
 	"slices"
 
 	rl "github.com/gen2brain/raylib-go/raylib"
@@ -97,6 +98,16 @@ type things struct {
 	set map[util.Vector[int]]bool
 }
 
+func (t things) Copy() things {
+	var newThings things
+
+	for k := range t.set {
+		newThings.Add(k.X, k.Y)
+	}
+
+	return newThings
+}
+
 func (t *things) Add(x int, y int) {
 	t.AddVector(util.Vector[int]{X: x, Y: y})
 }
@@ -121,45 +132,192 @@ func (t *things) AddVector(point util.Vector[int]) {
 	t.set[point] = true
 }
 
-func drawStuff(walls things, boxes things, robot util.Vector[int], boundary boundaries) bool {
-	if rl.WindowShouldClose() {
-		return true
-	}
-
+func drawStuff(state *State, statesRan int, totalMoves int, boundary boundaries) {
 	rl.BeginDrawing()
 	rl.ClearBackground(rl.Black)
 
-	height := rl.GetScreenHeight() / (boundary.Hi.Y - boundary.Lo.Y + 1)
-	width := rl.GetScreenWidth() / (boundary.Hi.X - boundary.Lo.X + 1)
-
-	for w := range walls.set {
-		rl.DrawRectangle(int32(w.X*width), int32(w.Y*height), int32(width), int32(height), rl.LightGray)
+	offset := util.Vector[int32]{X: 0, Y: 50}
+	boardBounds := util.Vector[int]{
+		X: (rl.GetScreenWidth() - int(offset.X)) / (boundary.Hi.X - boundary.Lo.X + 1),
+		Y: (rl.GetScreenHeight() - int(offset.Y)) / (boundary.Hi.Y - boundary.Lo.Y + 1),
 	}
 
-	for w := range boxes.set {
-		rl.DrawRectangle(int32(w.X*width), int32(w.Y*height), int32(width), int32(height), rl.Brown)
+	for w := range state.walls.set {
+		rl.DrawRectangle(offset.X+int32(w.X*boardBounds.X), offset.Y+int32(w.Y*boardBounds.Y), int32(boardBounds.X), int32(boardBounds.Y), rl.LightGray)
 	}
 
-	rl.DrawRectangle(int32(robot.X*width), int32(robot.Y*height), int32(width), int32(height), rl.Magenta)
+	for w := range state.boxes.set {
+		rl.DrawRectangle(offset.X+int32(w.X*boardBounds.X), offset.Y+int32(w.Y*boardBounds.Y), int32(boardBounds.X), int32(boardBounds.Y), rl.Brown)
+	}
+
+	rl.DrawRectangle(offset.X+int32(state.robot.X*boardBounds.X), offset.Y+int32(state.robot.Y*boardBounds.Y), int32(boardBounds.X), int32(boardBounds.Y), rl.Magenta)
+
+	rl.DrawText(fmt.Sprintf("Step: %d", state.step), 4, 4, 22, rl.White)
+
+	rl.DrawText(fmt.Sprintf("States Ran: %d", statesRan-1), 200, 4, 22, rl.White)
+
+	rl.DrawText(fmt.Sprintf("Total Moves: %d", totalMoves), 500, 4, 22, rl.White)
+
+	rl.DrawText(fmt.Sprintf("GPS: %d", getAnswer(state)), 800, 4, 22, rl.White)
 
 	rl.EndDrawing()
-	return false
+}
+
+type State struct {
+	step  int
+	walls things
+	boxes things
+	robot util.Vector[int]
+}
+
+func (s *State) Copy() *State {
+	return &State{
+		step:  s.step,
+		walls: s.walls.Copy(),
+		boxes: s.boxes.Copy(),
+		robot: s.robot,
+	}
 }
 
 func main() {
+	width := 1000
+	height := 1000
+	rl.SetConfigFlags(rl.FlagWindowResizable)
+	rl.InitWindow(int32(width), int32(height), "raylib [core] example - basic window")
+	defer rl.CloseWindow()
+
+	rl.SetTargetFPS(240)
+
+	state, boundary, moves := parseInput(util.Data(15))
+
+	initialState := state.Copy()
+	initialState.step = -1
+
+	states := make([]*State, 0, len(moves)+1)
+	states = append(states, initialState)
+
+	showState := 0
+
+	go func() {
+		for i := 0; i < len(moves); i++ {
+			currentStateIdx := i + 1
+			prevState := states[currentStateIdx-1]
+
+			nextState := prevState.Copy()
+			nextState.step = currentStateIdx
+			executeStep(nextState, moves[i], boundary)
+
+			states = append(states, nextState)
+		}
+	}()
+
+	justGo := false
+	for !rl.WindowShouldClose() {
+		nextShowState := showState
+
+		if rl.IsKeyPressed(rl.KeySpace) {
+			justGo = !justGo
+		}
+		if justGo {
+			nextShowState++
+		}
+
+		if rl.IsKeyPressed(rl.KeyRight) || rl.IsKeyPressedRepeat(rl.KeyRight) {
+			justGo = false
+			nextShowState++
+		}
+
+		if rl.IsKeyPressed(rl.KeyLeft) || rl.IsKeyPressedRepeat(rl.KeyLeft) {
+			justGo = false
+			nextShowState--
+		}
+
+		if rl.IsKeyPressed(rl.KeyUp) {
+			justGo = false
+			nextShowState = 0
+		}
+
+		if rl.IsKeyPressed(rl.KeyDown) {
+			justGo = false
+			nextShowState = len(states) - 1
+		}
+
+		if mouseMove := rl.GetMouseWheelMove(); mouseMove != 0 {
+			nextShowState = showState + int(mouseMove)
+		}
+
+		if 0 <= nextShowState && nextShowState < len(states) {
+			showState = nextShowState
+		}
+
+		drawStuff(states[showState], len(states), len(moves), boundary)
+	}
+
+	lastState := states[len(states)-1]
+	total := getAnswer(lastState)
+	printBoard(boundary, lastState)
+	fmt.Println(total)
+}
+
+func getAnswer(state *State) int {
+	var total int
+	for box := range state.boxes.set {
+		total += 100*box.Y + box.X
+	}
+	return total
+}
+
+func executeStep(state *State, dir Direction, boundary boundaries) {
+	intent := state.robot.Add(dir.Vector())
+	if state.walls.Has(intent.X, intent.Y) {
+		return
+	} else if state.boxes.HasVector(intent) {
+		var boxesToMove []util.Vector[int]
+		boxesToMove = append(boxesToMove, intent)
+
+		pos := intent.Add(dir.Vector())
+		for pos.Within(boundary.Lo, boundary.Hi) {
+			if state.walls.HasVector(pos) {
+				// found a wall, have to end and can't move anything
+				// didn't find an empty space
+				boxesToMove = nil
+				break
+			} else if state.boxes.HasVector(pos) {
+				// add another box
+				boxesToMove = append(boxesToMove, pos)
+			} else {
+				// empty space
+				break
+			}
+
+			pos = pos.Add(dir.Vector())
+		}
+
+		if boxesToMove != nil {
+			state.robot = intent
+
+			for _, box := range boxesToMove {
+				state.boxes.Remove(box)
+			}
+
+			for _, box := range boxesToMove {
+				state.boxes.AddVector(box.Add(dir.Vector()))
+			}
+		}
+	} else {
+		state.robot = intent
+	}
+
+	return
+}
+
+func parseInput(dataSeq iter.Seq[string]) (*State, boundaries, []Direction) {
 	var walls things
 	var boundary boundaries
 	var boxes things
 	var robot util.Vector[int]
 
-	//width := 800
-	//height := 600
-	//rl.InitWindow(int32(width), int32(height), "raylib [core] example - basic window")
-	//defer rl.CloseWindow()
-	//
-	//rl.SetTargetFPS(2)
-
-	data := slices.Collect(util.Data(15))
+	data := slices.Collect(dataSeq)
 	var y int
 	for _, line := range data {
 		for x, c := range line {
@@ -194,89 +352,22 @@ func main() {
 		}
 	}
 
-	//printBoard(boundary, walls, boxes, robot)
-	//fmt.Println()
-
-	//drawStuff(walls, boxes, robot, boundary)
-
-	for i, dir := range moves {
-
-		if dir == -1 {
-			panic("oh no")
-		}
-
-		fmt.Printf("%d: moving %s\n", i, dir)
-
-		intent := robot.Add(dir.Vector())
-		if walls.Has(intent.X, intent.Y) {
-			continue
-		} else if boxes.HasVector(intent) {
-			var boxesToMove []util.Vector[int]
-			boxesToMove = append(boxesToMove, intent)
-
-			pos := intent.Add(dir.Vector())
-			for pos.Within(boundary.Lo, boundary.Hi) {
-				if walls.HasVector(pos) {
-					// found a wall, have to end and can't move anything
-					// didn't find an empty space
-					boxesToMove = nil
-					break
-				} else if boxes.HasVector(pos) {
-					// add another box
-					boxesToMove = append(boxesToMove, pos)
-				} else {
-					// empty space
-					break
-				}
-
-				pos = pos.Add(dir.Vector())
-			}
-
-			if boxesToMove != nil {
-				robot = intent
-
-				for _, box := range boxesToMove {
-					boxes.Remove(box)
-				}
-
-				for _, box := range boxesToMove {
-					boxes.AddVector(box.Add(dir.Vector()))
-				}
-			}
-		} else {
-			robot = intent
-		}
-
-		//if drawStuff(walls, boxes, robot, boundary) {
-		//	return
-		//}
-
-		//printBoard(boundary, walls, boxes, robot)
-		//fmt.Println()
-	}
-
-	var total int
-	for box := range boxes.set {
-		total += 100*box.Y + box.X
-	}
-
-	printBoard(boundary, walls, boxes, robot)
-	fmt.Println(total)
+	return &State{walls: walls, boxes: boxes, robot: robot}, boundary, moves
 }
 
-func printBoard(boundary boundaries, walls things, boxes things, robot util.Vector[int]) {
+func printBoard(boundary boundaries, state *State) {
 	for y := boundary.Lo.Y; y <= boundary.Hi.Y; y++ {
 		for x := boundary.Lo.X; x <= boundary.Hi.X; x++ {
 			var empty = true
-			if walls.Has(x, y) {
+			if state.walls.Has(x, y) {
 				fmt.Print("#")
 				empty = false
 			}
-			if boxes.Has(x, y) {
+			if state.boxes.Has(x, y) {
 				fmt.Print("0")
 				empty = false
 			}
-			if robot.X == x && robot.Y == y {
+			if state.robot.X == x && state.robot.Y == y {
 				fmt.Print("@")
 				empty = false
 			}
